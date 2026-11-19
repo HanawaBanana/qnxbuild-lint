@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Clean fixture must pass (exit 0)
+        run: python -m qnxbuild_lint.cli lint tests/fixtures/clean.build
+
+      - name: Broken fixture must fail and report every rule (exit 1)
+        run: |
+          set +e
+          python -m qnxbuild_lint.cli lint tests/fixtures/broken.build --format json > broken.json
+          status=$?
+          set -e
+          test "$status" -eq 1
+          python - <<'PY'
+          import json
+          payload = json.load(open("broken.json"))
+          found = {d["rule"] for d in payload["diagnostics"]}
+          expected = {"ATTR_KIND", "ATTR_SPLIT_GROUPS", "ATTR_UNKNOWN",
+                      "ATTR_BAD_TYPE", "LINK_NEEDS_TARGET", "FILE_DUPLICATE_TARGET"}
+          missing = expected - found
+          assert not missing, f"rules did not fire: {sorted(missing)}"
+          print("all expected rules fired:", len(found))
+          PY
+
+      - name: Real BSP corpus must produce zero diagnostics
+        if: matrix.python-version == '3.12'
+        run: |
+          python tools/fetch_corpus.py
+          python tools/check_corpus.py
+
+      - name: Mutation demo on a vendor buildfile
+        if: matrix.python-version == '3.12'
+        run: python tools/mutation_demo.py .corpus/qnx__bsp_raspberrypi-bcm2712-rpi5/images/rpi5.build
+
+      - name: SARIF is valid JSON
+        run: |
+          python -m qnxbuild_lint.cli lint tests/fixtures/broken.build --format sarif > qnxbuild.sarif || true
+          python -c "import json; d=json.load(open('qnxbuild.sarif')); print('sarif results:', len(d['runs'][0]['results']))"

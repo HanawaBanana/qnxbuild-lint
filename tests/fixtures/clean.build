@@ -1,0 +1,15 @@
+# Minimal but complete buildfile: attributes, sticky lines, inline files.
+[image=0=IFS:/ifs] myboard.ifs
+[search=../install/aarch64le/usr/lib]
+[uid=0 gid=0 perms=0755]
+usr/bin/app
+[type=link]
+bin/sh=usr/bin/sh
+[perms=0644] /etc/app.conf = {
+key=value
+# a pound sign inside an inline file is ordinary content
+}
+[+script] startup-script = {
+display_msg "starting"
+app &
+}

@@ -1,0 +1,10 @@
+# downloaded BSP corpus (fetched at check time, never vendored)
+.corpus/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+qnxbuild.sarif

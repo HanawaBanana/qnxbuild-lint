@@ -1,0 +1,9 @@
+# Every defect class the linter sells, one per line.
+[raw=1] usr/bin/a
+[+uid] usr/bin/b
+[uid=0] [gid=0] usr/bin/c
+[gidz=0] usr/bin/d
+[type=hardlink] usr/bin/e
+[type=link] usr/bin/f
+[uid=0] usr/bin/g
+[uid=1000] usr/bin/g
