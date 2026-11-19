@@ -8,6 +8,7 @@ their own licence and this project only needs them as a false-positive oracle.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
