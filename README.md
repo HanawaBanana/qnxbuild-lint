@@ -1,5 +1,7 @@
 # qnxbuild-lint
 
+![ci](https://github.com/HanawaBanana/qnxbuild-lint/actions/workflows/ci.yml/badge.svg)
+
 Catch QNX build breaks **before** `mkifs` / `mk` do — from a Linux or macOS host, with no QNX SDP installed.
 
 QNX image builds fail late and quietly: `mkifs` aborts on a malformed buildfile, and the message points at a line whose real cause is an attribute written in the wrong form (`[raw=1]` instead of `[+raw]`) or two attribute groups split across one line. Recursive BSP builds fail the same way when an `include` target moved or a `[recursive]` subdirectory was renamed. `qnxbuild-lint` checks both formats statically and exits non-zero in CI.
