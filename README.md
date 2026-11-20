@@ -26,6 +26,7 @@ Buildfiles (`*.build`, QNX SDP 8.0 `mkifs` attribute list):
 | `ATTR_BARE` | token has neither a `+`/`-` prefix nor `=value` |
 | `ATTR_CONFLICT` | one group holds contradicting settings, e.g. `[+raw -raw]` |
 | `ATTR_DUPLICATE` | same attribute twice in one group (warning) |
+| `SECTION_UNKNOWN` | a bare `[name]` header whose name is not an mkifs attribute (e.g. a Meson-style `[block]`) |
 | `ATTR_NOT_LEADING` | attribute group does not start the line |
 | `ATTR_SPLIT_GROUPS` | `[uid=5] [gid=5] file` — documented as the incorrect way |
 | `LINK_NEEDS_TARGET` | `[type=link]` without a `name=target` specification |
@@ -82,3 +83,7 @@ $ python3 tools/mutation_demo.py .corpus/qnx__bsp_raspberrypi-bcm2712-rpi5/image
 ## Licence
 
 MIT — see `LICENSE`.
+
+## Docs
+
+- [`docs/rules.md`](docs/rules.md) — every rule, its severity, and the attribute tables; generated from the code by `tools/gen_rules_doc.py` (CI fails when stale).

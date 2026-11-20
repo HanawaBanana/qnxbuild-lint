@@ -138,3 +138,38 @@ class RobustnessTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SectionHeaderTests(unittest.TestCase):
+    def test_unknown_section_header_is_named(self):
+        """`[block]` is not an mkifs attribute; name the problem, not "needs =value"."""
+        bf = lint_source("[block]\nformat=ifs\n")
+        found = [d.rule for d in bf.diagnostics]
+        self.assertEqual(found.count("SECTION_UNKNOWN"), 1)
+        self.assertNotIn("ATTR_BARE", found)
+        self.assertEqual(bf.diagnostics[0].line, 1)
+
+    def test_documented_value_attribute_without_value_stays_bare(self):
+        """`image` is a documented value attribute (`image=[start][-end]...`),
+        so `[image]` on its own is a missing value, not an unknown section."""
+        self.assertEqual(rules("[image]\n"), ["ATTR_BARE"])
+
+    def test_real_world_fragment_parses_clean(self):
+        """Shape of a third-party CTI fragment (Apache-2.0): include block,
+        [type=link] with an absolute target, `file` block with source_path."""
+        text = (
+            "include {\n"
+            "    glaned\n"
+            "    sensors.d\n"
+            "}\n"
+            "\n"
+            "[type=link] /usr/bin/glaned = /bin/glaned\n"
+            "\n"
+            "file /etc/sensors.d {\n"
+            "    source_path = sensors.d\n"
+            "}\n"
+        )
+        self.assertEqual(rules(text), [])
+
+    def test_global_boolean_attribute_alone_is_not_a_section(self):
+        self.assertEqual(rules("[+raw]\nmy_app\n"), [])

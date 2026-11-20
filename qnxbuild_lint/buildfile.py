@@ -203,6 +203,14 @@ def parse_attributes(
     return tokens
 
 
+def _is_unknown_section(body: str) -> bool:
+    """True for a bare ``[name]`` line whose name is not a mkifs attribute."""
+    token = body.strip()
+    if not token or "=" in token or token[0] in "+-?" or " " in token:
+        return False
+    return classify(token) is None
+
+
 def lint_source(text: str, path: str = "<string>") -> Buildfile:
     """Parse and lint buildfile text.  Never raises on malformed input."""
     entries: list[Entry] = []
@@ -242,7 +250,29 @@ def lint_source(text: str, path: str = "<string>") -> Buildfile:
                         "combine all attributes into one pair of brackets: '[a] [b]' is invalid",
                     )
                 )
+            whole_line_section = (
+                len(groups) == 1
+                and groups[0].start() == 0
+                and not _ATTR_GROUP.sub("", stripped).strip()
+            )
             for group in groups:
+                if whole_line_section and _is_unknown_section(group.group(1)):
+                    # `[image]`-style header: mkifs has no attribute by that
+                    # name, so this is almost always a section borrowed from
+                    # another build system (or invented).  Report it as such
+                    # instead of the confusing ATTR_BARE message.
+                    diagnostics.append(
+                        Diagnostic(
+                            "SECTION_UNKNOWN",
+                            "error",
+                            index,
+                            group.start() + 2,
+                            f"unknown attribute or section '[{group.group(1).strip()}]'; "
+                            "mkifs attributes are written as [+raw]/[-raw] or name=value "
+                            "(see `qnxbuild-lint --explain ATTR_UNKNOWN` for the list)",
+                        )
+                    )
+                    continue
                 tokens.extend(
                     parse_attributes(
                         group.group(1), index, group.start() + 2, diagnostics

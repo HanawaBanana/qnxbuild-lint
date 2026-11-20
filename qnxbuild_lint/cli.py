@@ -17,6 +17,7 @@ RULES: dict[str, str] = {
     "ATTR_EMPTY_VALUE": "value attribute given an empty value",
     "ATTR_BAD_TYPE": "type= value is not one of link/fifo/file/dir",
     "ATTR_BARE": "attribute token has neither a +/- prefix nor =value",
+    "SECTION_UNKNOWN": "bare [name] header that is not an mkifs attribute (e.g. [image])",
     "ATTR_CONFLICT": "contradicting attributes in one group, e.g. [+raw -raw]",
     "ATTR_DUPLICATE": "the same attribute appears twice in one group",
     "ATTR_NOT_LEADING": "attribute group does not start the line",

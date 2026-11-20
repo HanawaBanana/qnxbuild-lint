@@ -18,6 +18,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Docs are in sync with the rule tables
+        run: python3 tools/gen_rules_doc.py --check
+
       - name: Unit tests
         run: python -m unittest discover -s tests -v
 
@@ -36,7 +39,8 @@ jobs:
           payload = json.load(open("broken.json"))
           found = {d["rule"] for d in payload["diagnostics"]}
           expected = {"ATTR_KIND", "ATTR_SPLIT_GROUPS", "ATTR_UNKNOWN",
-                      "ATTR_BAD_TYPE", "LINK_NEEDS_TARGET", "FILE_DUPLICATE_TARGET"}
+                      "ATTR_BAD_TYPE", "LINK_NEEDS_TARGET", "FILE_DUPLICATE_TARGET",
+                      "SECTION_UNKNOWN"}
           missing = expected - found
           assert not missing, f"rules did not fire: {sorted(missing)}"
           print("all expected rules fired:", len(found))
@@ -54,7 +58,11 @@ jobs:
         if: matrix.python-version == '3.12'
         run: python tools/mutation_demo.py .corpus/qnx__bsp_raspberrypi-bcm2712-rpi5/images/rpi5.build
 
-      - name: SARIF is valid JSON
+      - name: SARIF is valid JSON and keeps the failing exit code
         run: |
-          python -m qnxbuild_lint.cli lint tests/fixtures/broken.build --format sarif > qnxbuild.sarif || true
-          python -c "import json; d=json.load(open('qnxbuild.sarif')); print('sarif results:', len(d['runs'][0]['results']))"
+          set +e
+          python -m qnxbuild_lint.cli lint tests/fixtures/broken.build --format sarif > qnxbuild.sarif
+          status=$?
+          set -e
+          test "$status" -eq 1
+          python -c "import json; d=json.load(open('qnxbuild.sarif')); results=d['runs'][0]['results']; print('sarif results:', len(results)); assert results"

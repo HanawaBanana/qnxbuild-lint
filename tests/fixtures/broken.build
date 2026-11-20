@@ -1,4 +1,5 @@
 # Every defect class the linter sells, one per line.
+[block]
 [raw=1] usr/bin/a
 [+uid] usr/bin/b
 [uid=0] [gid=0] usr/bin/c
@@ -7,3 +8,6 @@
 [type=link] usr/bin/f
 [uid=0] usr/bin/g
 [uid=1000] usr/bin/g
+
+# borrowed section header (unknown attribute name)
+# [block] above is the SECTION_UNKNOWN case
