@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from .attributes import TYPE_VALUES, classify
+from .attributes import DUAL_FORM_ATTRIBUTES, TYPE_VALUES, classify
 
 BANNER = "# qnxbuild-lint:"
 
@@ -17,6 +17,9 @@ class Diagnostic:
     line: int
     col: int
     message: str
+    # File the diagnostic belongs to.  Callers that receive diagnostics from
+    # lint_tree() use it instead of guessing a path from the message text.
+    path: str = ""
 
     def as_dict(self) -> dict:
         return {
@@ -77,26 +80,63 @@ def _strip_comment(line: str) -> str:
     return "".join(out)
 
 
-def _brace_delta(text: str) -> int:
-    """Net `{` minus `}` on a line.
+def _closes_block(text: str) -> bool:
+    """True when a line inside an inline block ends that block.
 
-    ``${VAR}`` references and escaped braces (``\{``/``\}``) do not count —
-    mkifs requires ``}`` inside an inline file to be escaped with a backslash.
+    mkifs ends an inline file at the first ``}``; a ``{`` inside the block is
+    ordinary file content and does not open a nested one.  ``${VAR}``
+    references and escaped braces (``\\{``/``\\}``) never count — mkifs requires
+    a literal ``}`` inside an inline file to be escaped with a backslash.
     """
     cleaned = _VAR_REF.sub("", text)
     cleaned = cleaned.replace("\\{", "").replace("\\}", "")
-    return cleaned.count("{") - cleaned.count("}")
+    return "}" in cleaned
+
+
+def _opens_block(text: str) -> bool:
+    """True when an entry line opens an inline block and does not close it."""
+    cleaned = _VAR_REF.sub("", _strip_comment(text))
+    cleaned = cleaned.replace("\\{", "").replace("\\}", "")
+    return "{" in cleaned and "}" not in cleaned
+
+
+def _split_tokens(group: str) -> list[str]:
+    """Split an attribute group on whitespace, honouring quoted values.
+
+    ``[virtual="aarch64le,srec -b"]`` is one token, not three: the mkifs
+    reference accepts a quoted value containing spaces.
+    """
+    tokens: list[str] = []
+    current: list[str] = []
+    quote = ""
+    for ch in group:
+        if quote:
+            current.append(ch)
+            if ch == quote:
+                quote = ""
+            continue
+        if ch in "\"'":
+            quote = ch
+            current.append(ch)
+            continue
+        if ch.isspace():
+            if current:
+                tokens.append("".join(current))
+                current = []
+            continue
+        current.append(ch)
+    if current:
+        tokens.append("".join(current))
+    return tokens
 
 
 def parse_attributes(
     group: str, line_no: int, col: int, diagnostics: list[Diagnostic]
 ) -> list[str]:
     """Split one ``[...]`` attribute group into tokens and validate each token."""
-    tokens = group.split()
+    tokens = _split_tokens(group)
     seen: dict[str, str] = {}  # bare name -> rendered token
     for token in tokens:
-        if not token:
-            continue
         conditional = token.startswith("?")
         body = token[1:] if conditional else token
         if body[:1] in "+-":
@@ -124,8 +164,11 @@ def parse_attributes(
                 )
         elif "=" in body:
             name, _, value = body.partition("=")
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
             kind = classify(name)
-            if kind == "boolean":
+            if kind == "boolean" and name not in DUAL_FORM_ATTRIBUTES:
                 diagnostics.append(
                     Diagnostic(
                         "ATTR_KIND",
@@ -215,13 +258,13 @@ def lint_source(text: str, path: str = "<string>") -> Buildfile:
     """Parse and lint buildfile text.  Never raises on malformed input."""
     entries: list[Entry] = []
     diagnostics: list[Diagnostic] = []
-    depth = 0  # inside a `name = { ... }` script or file-content block
+    in_block = False  # inside a `name = { ... }` script or file-content block
     for index, raw in enumerate(text.splitlines(), start=1):
-        if depth > 0:
+        if in_block:
             # Inside an inline file `#` is ordinary content (mkifs docs:
             # "mkifs doesn't interpret a pound sign (#) in an inline file as
-            # the beginning of a comment").
-            depth = max(0, depth + _brace_delta(raw))
+            # the beginning of a comment"), and a `{` is ordinary content too.
+            in_block = not _closes_block(raw)
             continue
         stripped = _strip_comment(raw).strip()
         if not stripped:
@@ -283,7 +326,9 @@ def lint_source(text: str, path: str = "<string>") -> Buildfile:
         entry = Entry(line=index, attributes=tokens, spec=rest, bracketed=bool(groups))
         entries.append(entry)
         _check_entry(entry, path, diagnostics)
-        depth = max(0, depth + _brace_delta(stripped))
+        # A block opens on the entry line that ends with an unescaped `{`;
+        # everything up to the next `}` line is file content, not entries.
+        in_block = _opens_block(stripped)
 
     _check_duplicate_targets(entries, diagnostics)
     return Buildfile(path=path, entries=entries, diagnostics=diagnostics)

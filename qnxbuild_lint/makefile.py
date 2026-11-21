@@ -152,6 +152,10 @@ def parse(path: str, text: str) -> Makefile:
                 "make keeps the last recipe and warns 'overriding recipe'",
             )
         )
+    # Every diagnostic produced here belongs to the file being parsed; the CLI
+    # reports it verbatim instead of parsing a path out of the message text.
+    for diagnostic in mk.diagnostics:
+        diagnostic.path = path
     return mk
 
 
@@ -176,7 +180,7 @@ def lint_tree(root: str) -> list[Diagnostic]:
             parsed[path] = parse(path, _read(path))
         except OSError as exc:
             diagnostics.append(
-                Diagnostic("MAKE_UNREADABLE", "error", 1, 1, f"{path}: {exc}")
+                Diagnostic("MAKE_UNREADABLE", "error", 1, 1, f"{path}: {exc}", path=path)
             )
             return
 
@@ -217,6 +221,7 @@ def lint_tree(root: str) -> list[Diagnostic]:
                             line,
                             1,
                             f"{path}: included file '{target}' does not exist",
+                            path=path,
                         )
                     )
                 continue
@@ -237,6 +242,7 @@ def lint_tree(root: str) -> list[Diagnostic]:
                             line,
                             1,
                             f"{path}: LIST={var_name} names '{value}' but no such directory exists",
+                            path=path,
                         )
                     )
                     continue
@@ -270,6 +276,7 @@ def _find_cycles(graph: dict[str, set[str]]) -> list[Diagnostic]:
                             1,
                             1,
                             "include/recursion cycle: " + " -> ".join(cycle),
+                            path=cycle[0],
                         )
                     )
             elif state == 0 and neighbour in graph:

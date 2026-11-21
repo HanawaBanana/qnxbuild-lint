@@ -103,6 +103,12 @@ class TreeTests(unittest.TestCase):
         write(self.root, "src/Makefile", "all:\n    echo broken\n")
         self.assertIn("MAKE_SPACE_RECIPE", self.rules())
 
+    def test_diagnostics_name_the_offending_file(self) -> None:
+        write(self.root, "Makefile", "all:\n\t@true\n")
+        write(self.root, "src/Makefile", "all:\n    cc -o x x.c\n")
+        paths = {d.path for d in lint_tree(str(self.root))}
+        self.assertEqual(paths, {str(self.root / "src" / "Makefile")})
+
 
 if __name__ == "__main__":
     unittest.main()

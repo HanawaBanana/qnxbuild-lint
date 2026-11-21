@@ -71,6 +71,11 @@ VALUE_ATTRIBUTES: frozenset[str] = frozenset(
 # file — a regular, everyday file (the default), dir — a directory."
 TYPE_VALUES: frozenset[str] = frozenset({"link", "fifo", "file", "dir"})
 
+
+# Attributes the mkifs reference documents in *both* forms: `+compress` /
+# `-compress` inside composite values such as [virtual=aarch64le,raw -compress],
+# and `compress=<algorithm>` on an image entry (e.g. [compress=deflate] my.ifs).
+DUAL_FORM_ATTRIBUTES: frozenset[str] = frozenset({"compress"})
 ALL_ATTRIBUTES: frozenset[str] = BOOLEAN_ATTRIBUTES | VALUE_ATTRIBUTES
 
 

@@ -86,6 +86,19 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("IO_MISSING", result.stdout)
 
+    def test_directory_scan_reports_the_makefile_not_the_directory(self) -> None:
+        (self.root / "src").mkdir()
+        (self.root / "src" / "Makefile").write_text(
+            "all:\n    cc -o x x.c\n", encoding="utf-8"
+        )
+        payload = json.loads(run("lint", str(self.root), "--format", "json").stdout)
+        files = {d["file"] for d in payload["diagnostics"]}
+        self.assertEqual(files, {str(self.root / "src" / "Makefile")})
+
+    def test_every_rule_is_explainable(self) -> None:
+        for rule in ("IO_MISSING", "MAKE_DUP_RECIPE", "SECTION_UNKNOWN"):
+            self.assertEqual(run("--explain", rule).returncode, 0, rule)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -173,3 +173,28 @@ class SectionHeaderTests(unittest.TestCase):
 
     def test_global_boolean_attribute_alone_is_not_a_section(self):
         self.assertEqual(rules("[+raw]\nmy_app\n"), [])
+
+
+class DocumentedFormsTests(unittest.TestCase):
+    """Forms the mkifs reference documents but early versions rejected."""
+
+    def test_compress_accepts_algorithm_value(self):
+        # mkifs: `[compress=algorithm]` compresses the image; `+compress` /
+        # `-compress` are the boolean forms inside a composite attribute.
+        self.assertEqual(rules("[compress=deflate] my.ifs\n"), [])
+        self.assertEqual(rules("[compress=3] my.ifs\n"), [])
+        self.assertEqual(rules("[+compress] my.ifs\n"), [])
+
+    def test_quoted_value_with_spaces_is_one_token(self):
+        text = '[virtual="aarch64le,srec -b"] boot = {\n}\n'
+        self.assertEqual(rules(text), [])
+
+    def test_brace_inside_inline_block_does_not_nest(self):
+        # A `{` inside an inline file is ordinary content; only `}` ends it.
+        text = (
+            "[+script] my_start = {\n"
+            '    echo "{"\n'
+            "}\n"
+            "[uid=] after\n"
+        )
+        self.assertEqual(rules(text), ["ATTR_EMPTY_VALUE"])

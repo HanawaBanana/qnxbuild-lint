@@ -48,7 +48,9 @@ Every rule maps to a documented or observable `mkifs`/`make` behaviour — nothi
 ## Install and run
 
 ```console
-$ pipx install qnxbuild-lint    # or: pip install qnxbuild-lint
+$ pipx install git+https://github.com/HanawaBanana/qnxbuild-lint
+# or, in a virtualenv:
+$ pip install git+https://github.com/HanawaBanana/qnxbuild-lint
 $ qnxbuild-lint lint images/ src/ --format sarif > qnxbuild.sarif
 $ qnxbuild-lint --explain MAKE_SPACE_RECIPE
 ```

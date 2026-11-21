@@ -21,7 +21,7 @@ from qnxbuild_lint.attributes import (  # noqa: E402
     TYPE_VALUES,
     VALUE_ATTRIBUTES,
 )
-from qnxbuild_lint.cli import RULES  # noqa: E402
+from qnxbuild_lint.cli import RULES, severity_of  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "rules.md"
@@ -44,8 +44,7 @@ def render() -> str:
         "|---|---|---|",
     ]
     for rule, text in sorted(RULES.items()):
-        severity = "warning" if rule in {"ATTR_DUPLICATE", "FILE_DUPLICATE_TARGET"} else "error"
-        lines.append(f"| `{rule}` | {severity} | {text} |")
+        lines.append(f"| `{rule}` | {severity_of(rule)} | {text} |")
     lines += [
         "",
         "## Attributes accepted by the parser",

@@ -17,7 +17,7 @@ RULES: dict[str, str] = {
     "ATTR_EMPTY_VALUE": "value attribute given an empty value",
     "ATTR_BAD_TYPE": "type= value is not one of link/fifo/file/dir",
     "ATTR_BARE": "attribute token has neither a +/- prefix nor =value",
-    "SECTION_UNKNOWN": "bare [name] header that is not an mkifs attribute (e.g. [image])",
+    "SECTION_UNKNOWN": "bare [name] header that is not an mkifs attribute (e.g. [block])",
     "ATTR_CONFLICT": "contradicting attributes in one group, e.g. [+raw -raw]",
     "ATTR_DUPLICATE": "the same attribute appears twice in one group",
     "ATTR_NOT_LEADING": "attribute group does not start the line",
@@ -31,7 +31,16 @@ RULES: dict[str, str] = {
     "MAKE_DUP_RECIPE": "target defined with more than one recipe",
     "MAKE_ORPHAN_RECIPE": "recipe line with no preceding rule",
     "MAKE_UNREADABLE": "makefile could not be read",
+    "IO_MISSING": "path given on the command line does not exist",
 }
+
+# Rules that report a warning instead of an error.
+WARNING_RULES: frozenset[str] = frozenset({"ATTR_DUPLICATE", "FILE_DUPLICATE_TARGET", "MAKE_DUP_RECIPE"})
+
+
+def severity_of(rule: str) -> str:
+    """Severity a rule reports with; the documentation table uses it too."""
+    return "warning" if rule in WARNING_RULES else "error"
 
 
 def _collect(paths: list[str]) -> list[tuple[str, Diagnostic]]:
@@ -65,7 +74,7 @@ def _lint_dir(root: str) -> list[tuple[str, Diagnostic]]:
             for diagnostic in lint_source(text, path).diagnostics:
                 out.append((path, diagnostic))
     for diagnostic in lint_tree(root):
-        out.append((diagnostic.message.split(":")[0] if ":" in diagnostic.message else root, diagnostic))
+        out.append((diagnostic.path or root, diagnostic))
     return out
 
 

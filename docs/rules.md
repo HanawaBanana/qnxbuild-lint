@@ -21,15 +21,16 @@ recursive Makefile model (`LIST=` plus `include recurse.mk`).
 | `ATTR_SPLIT_GROUPS` | error | two attribute groups on one line; mkifs accepts only one |
 | `ATTR_UNKNOWN` | error | attribute name is not in the mkifs attribute list |
 | `FILE_DUPLICATE_TARGET` | warning | two entries write the same path; mkifs silently keeps the last |
+| `IO_MISSING` | error | path given on the command line does not exist |
 | `LINK_NEEDS_TARGET` | error | [type=link] needs a name=target file specification |
 | `MAKE_CYCLE` | error | include/recursion cycle would make the build loop |
-| `MAKE_DUP_RECIPE` | error | target defined with more than one recipe |
+| `MAKE_DUP_RECIPE` | warning | target defined with more than one recipe |
 | `MAKE_MISSING_INCLUDE` | error | included makefile does not exist (and is not -include) |
 | `MAKE_MISSING_VARIANT_DIR` | error | LIST= variable names a directory that does not exist |
 | `MAKE_ORPHAN_RECIPE` | error | recipe line with no preceding rule |
 | `MAKE_SPACE_RECIPE` | error | recipe line indented with spaces; make aborts 'missing separator' |
 | `MAKE_UNREADABLE` | error | makefile could not be read |
-| `SECTION_UNKNOWN` | error | bare [name] header that is not an mkifs attribute (e.g. [image]) |
+| `SECTION_UNKNOWN` | error | bare [name] header that is not an mkifs attribute (e.g. [block]) |
 
 ## Attributes accepted by the parser
 
